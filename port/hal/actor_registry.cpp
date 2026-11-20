@@ -148,6 +148,7 @@ static void *port_factory_minimap(void) { return dMap_c_classInit(); }
 #include "actor_classes.inc"
 #include "dBgCh_Actr.h"
 #include "fBase_c.h"
+#include "mod_hooks.h"
 
 static const PortActorClass port_actor_classes[] = {
     {0x0bf, "PLAYER", g_profile_PLAYER, port_factory_player,
@@ -1315,6 +1316,10 @@ extern "C" void port_actor_frame_end(int frame, const char *loop)
         g_k1_list_disp[i] = 0;
     }
     g_k1_f_rom = g_k1_f_tick = g_k1_f_render = g_k1_f_pass = 0;
+    /* a code plugin's on_frame, after the frame's actor work (hal/mod_hooks.h;
+       null unless the tracing build's loader, hal/lab_plugins.cpp, set it) */
+    if (port_mod_hook_frame)
+        port_mod_hook_frame();
 }
 
 /* How many actors are currently on each list -- the read-back that says the

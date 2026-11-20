@@ -76,6 +76,7 @@
 
 #include "dBgW_Kc.h"
 #include "dsstate_seg.h"
+#include "hal/mod_hooks.h"   /* port_mod_hook_level: a code plugin's on_level_load */
 #include "hal/comms_seam.h"   /* run mg16 lane MP3: port::vs_player_count() */
 #include "fBase_c.h"   /* SYNC4: moved up out of an extern "C" block */
 #include "dActor_c.h"  /* SYNC4: same, and it reaches math/Fix12.h now */
@@ -2795,6 +2796,11 @@ void *port_stage_a_boot(void *mc, int spawn)
     g_boot_spawn = spawn;
     g_boot_result = 0;
     port_stage_lifecycle_boot();
+    /* the level is up (every level boot and every level change come through
+       here): a code plugin's on_level_load (hal/mod_hooks.h; null unless the
+       tracing build's loader, hal/lab_plugins.cpp, set it) */
+    if (port_mod_hook_level)
+        port_mod_hook_level(port_level_id());
     return g_boot_result;
 }
 

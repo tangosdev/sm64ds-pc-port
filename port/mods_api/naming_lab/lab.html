@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SM64DS naming lab</title>
+<style>
+:root{--bg:#14161a;--pane:#1c1f25;--line:#2c313a;--fg:#d8dce3;--dim:#8a93a2;--acc:#5aa9ff;--hit:#ffb347;--bad:#ff6b6b;--ok:#62d17a;--own:#5aa9ff;--base:#9aa3b2;--other:#e8a33d;--coined:#e8a33d;--lw:320px;--rw:400px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:12px/1.35 ui-monospace,Consolas,monospace;height:100vh;display:flex;flex-direction:column}
+header{display:flex;gap:12px;align-items:center;padding:5px 10px;border-bottom:1px solid var(--line);background:var(--pane);flex-wrap:wrap}
+header b{color:var(--acc)} .dot{width:9px;height:9px;border-radius:50%;background:var(--bad);display:inline-block}
+.dot.on{background:var(--ok)} .stat{color:var(--dim)} .stat span{color:var(--fg)}
+.grp{display:flex;gap:3px;align-items:center}
+button{background:#2a3040;color:var(--fg);border:1px solid #3a4152;border-radius:3px;padding:2px 8px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--acc)} button.on{background:#27486e;border-color:#3d6a9e}
+.seg{display:inline-flex} .seg button{border-radius:0} .seg button:first-child{border-radius:3px 0 0 3px} .seg button:last-child{border-radius:0 3px 3px 0;margin-left:-1px}
+input,textarea,select{background:#11141a;color:var(--fg);border:1px solid #3a4152;border-radius:3px;font:inherit;padding:2px 4px}
+label{cursor:pointer;user-select:none}
+main{flex:1;display:grid;grid-template-columns:var(--lw) 5px 1fr 5px var(--rw);min-height:0}
+section{display:flex;flex-direction:column;min-height:0;min-width:0}
+.gut{background:var(--line);cursor:col-resize} .gut:hover,.gut.drag{background:var(--acc)}
+h2{margin:0;padding:4px 8px;font-size:12px;background:#222630;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;min-height:27px;flex-wrap:wrap}
+h2 .sp{flex:1}
+.scroll{overflow:auto;min-height:0}
+table{border-collapse:collapse;width:100%}
+td,th{padding:1px 5px;white-space:nowrap;text-align:left;border-bottom:1px solid #20242c}
+th{position:sticky;top:0;background:#20242c;color:var(--dim);font-weight:normal;cursor:pointer;z-index:1}
+tr.sel td{background:#26364d} tbody tr:hover td{background:#232a35}
+.num{text-align:right} .dim{color:var(--dim)} .own{color:var(--own)} .base{color:var(--base)} .other{color:var(--other)} .bad{color:var(--bad)}
+.chg td{background:#4a3a14 !important;transition:background 0s}
+.fade td{transition:background 1.2s}
+td.val{cursor:text} td.unk{color:#6f7787}
+canvas{display:block}
+.tabs{display:flex;gap:2px;padding:3px 6px;background:#1a1d23;border-bottom:1px solid var(--line)}
+.tabs button{border-color:transparent;background:transparent;color:var(--dim)} .tabs button.on{background:#27486e;color:var(--fg)}
+.panel{display:none;min-height:0;flex:1;flex-direction:column} .panel.on{display:flex}
+.info{padding:6px 8px;border-top:1px solid var(--line);background:#191c22;min-height:64px;max-height:38%;overflow:auto}
+#tip{position:fixed;pointer-events:none;background:#000d;border:1px solid #444;padding:4px 6px;display:none;z-index:9;max-width:520px;white-space:pre-wrap}
+.tex{display:inline-block;margin:4px;text-align:center;vertical-align:top}
+.tex img{image-rendering:pixelated;background:repeating-conic-gradient(#333 0 25%,#222 0 50%) 0 0/12px 12px;border:1px solid #333}
+#src{position:fixed;inset:5% 8%;background:#0f1115;border:1px solid #444;display:none;flex-direction:column;z-index:8}
+#src pre{margin:0;overflow:auto;flex:1;padding:6px}
+#src .ln{color:#555;display:inline-block;width:46px;text-align:right;margin-right:8px;user-select:none}
+#src .hl{background:#2c3b18}
+form.prop{display:grid;grid-template-columns:80px 1fr;gap:3px 6px;padding:6px 8px;border-bottom:1px solid var(--line)}
+form.prop textarea{height:44px}
+.note{padding:5px 8px;color:var(--dim)}
+.small{font-size:11px}
+.named{color:#8fd18f;font-style:italic}
+.pill{border:1px solid #3a4152;border-radius:8px;padding:0 5px;margin-left:4px;color:var(--dim);font-size:11px}
+/* a class name with an English name on hover */
+.en{cursor:help;text-decoration:underline dotted #3a4152}
+.legend span{margin-right:8px}
+#syswrap{flex:1;position:relative;overflow-x:hidden}
+#dbg{display:none;padding:4px 10px;border-bottom:1px solid var(--line);background:#1d2230}
+#dbg.armed{display:block} #dbg.stopped{display:block;background:#3a2a10;border-bottom-color:#7a5a20}
+#dbg .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#dbg .stk span{cursor:pointer} #dbg .stk span:hover{text-decoration:underline}
+#dbg kbd{border:1px solid #555;border-radius:3px;padding:0 3px;font-size:10px;color:var(--dim)}
+.brkchg td{background:#3d2a52 !important}
+td.val{cursor:text} td.val:hover{outline:1px dashed #4a5366}
+td.val input{width:100%}
+#sys{position:sticky;top:0}
+</style>
+</head>
+<body>
+<header>
+  <b>SM64DS naming lab</b>
+  <span class="grp" id="linkgrp"><span id="link" class="dot"></span> <span id="linktxt" class="stat">no game</span></span>
+  <span class="stat">tick <span id="tick">-</span></span>
+  <span class="stat">level <span id="level">-</span> · area <span id="area">-</span></span>
+  <span class="stat">actors <span id="nact">-</span></span>
+  <span class="stat">calls/frame <span id="calls">-</span></span>
+  <span style="flex:1"></span>
+  <span class="grp">
+    <button id="bpause" title="freeze the game loop (window stays responsive)">pause</button>
+    <button id="bstep" title="run one frame while paused">+1</button>
+    <button id="bstep10" title="run ten frames while paused">+10</button>
+    <button id="btrace" title="lab trace on/off: the timeline, Hot and Systems all need it">trace</button></span>
+  <span class="pill" title="Everything shown here comes from the PC port, which runs this repository's own source. It suggests names; only the ROM / melonDS confirms them.&#10;Cartridge class names come from the ROM's RTTI (tools/rtti_extract.py).">port = candidates only</span>
+</header>
+<div id="dbg"></div>
+<main>
+<section>
+  <h2>Actors <span class="sp"></span><input id="afilter" placeholder="filter class / id" size="14"></h2>
+  <div class="scroll" style="flex:1"><table id="atab"><thead><tr>
+    <th data-k="cls">class</th><th data-k="dist" class="num">dist</th><th data-k="calls" class="num" title="calls with this actor as this/self, last frame">calls</th><th data-k="area" class="num">ar</th><th data-k="aid" class="num">id</th><th></th>
+  </tr></thead><tbody></tbody></table></div>
+</section>
+<div class="gut" data-v="--lw" data-s="1"></div>
+<section>
+  <div class="tabs" id="midtabs"><button data-p="insp" class="on">Inspector</button><button data-p="sys" title="every class the cartridge's RTTI knows, in its own hierarchy, with live call activity">Systems</button></div>
+  <div class="panel on" id="p-insp">
+    <h2><span id="ftitle" class="dim">click an actor (left), or a class in Systems</span><span class="sp"></span>
+      <label class="small" title="port-only helpers (no ROM address) on the timeline"><input type="checkbox" id="tlport"> port code</label>
+      <button id="bverify" title="queue this class for confirmation on the real cartridge (melonDS)">queue for ROM verify</button>
+      <button id="bunfocus">clear</button></h2>
+    <div id="tlwrap" style="position:relative;border-bottom:1px solid var(--line)"><canvas id="tl" height="60"></canvas></div>
+    <div id="fninfo" class="info dim">Every function that ran with the focused actor as <i>this</i> (or as its first argument), one column per frame, newest at the right. Click a row for its ROM address, signature and source.</div>
+    <h2>Fields <span class="pill" id="hdr"></span><span class="sp"></span>
+      <label class="small"><input type="checkbox" id="onlychg"> changing only</label>
+      <label class="small"><input type="checkbox" id="showunk" checked> gaps</label></h2>
+    <div class="scroll" style="flex:1"><table id="ftab"><thead><tr>
+      <th>off</th><th>owner</th><th>type</th><th>name</th><th>value</th><th class="num" title="frames this field changed in the last 300">chg</th><th title="arm a hardware write breakpoint on this field for one second and list every function that wrote it">writes</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="panel" id="p-sys">
+    <h2><span>Systems</span><span class="dim small" id="syscount"></span><span class="sp"></span>
+      <input id="sysfilter" placeholder="filter class / gloss" size="16">
+      <label class="small" title="hide classes with no calls in the last ~10 s and no live instance"><input type="checkbox" id="sysactive" checked> running</label>
+      <button id="sysopen" title="expand every class">expand</button><button id="sysclose">collapse</button></h2>
+    <div class="note small legend"><span>strips: calls per frame, ~10 s, newest at right</span><span class="own">■ the class's own methods</span><span class="base">■ it and everything derived from it</span><span>hover a name for its English</span></div>
+    <div id="syswrap" class="scroll"><canvas id="sys"></canvas><div id="sysspacer"></div></div>
+    <div id="sysinfo" class="info dim">The cartridge's own class tree (its RTTI), with this tree's names for each class. Click a class to expand its methods and subclasses; a method strip shows when it runs, frame by frame.</div>
+  </div>
+</section>
+<div class="gut" data-v="--rw" data-s="-1"></div>
+<section>
+  <div class="tabs" id="righttabs">
+    <button data-p="hot" class="on">Hot</button><button data-p="assets">Assets</button><button data-p="names">Names</button><button data-p="methods">Class</button>
+  </div>
+  <div class="panel on" id="p-hot">
+    <div class="note small">Most-called functions in the whole game, per frame, over the last second. <label><input type="checkbox" id="hotgame" checked> game functions only</label></div>
+    <div class="scroll" style="flex:1"><table id="htab"><thead><tr><th class="num">/frame</th><th>function</th><th>ROM</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="panel" id="p-assets">
+    <h2>Files the game loaded <span class="sp"></span><input id="asfilter" placeholder="filter file / class" size="14"> <button id="bassets">refresh</button></h2>
+    <div class="scroll" style="flex:1">
+      <table id="astab"><thead><tr><th>file</th><th>owner</th><th>asked for by</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div id="texs" class="scroll" style="max-height:45%"></div>
+  </div>
+  <div class="panel" id="p-names">
+    <form class="prop" id="pform">
+      <span>subject</span><input name="subject" placeholder="Class::method, Class+0x123, file id">
+      <span>ROM</span><input name="rom" placeholder="ROM address / symbol (filled from a selection)">
+      <span>current</span><input name="current">
+      <span>proposed</span><input name="proposed" placeholder="the name you'd give it">
+      <span>evidence</span><textarea name="evidence" placeholder="what you saw: when it runs, what it changes"></textarea>
+      <span></span><button>save proposal</button>
+    </form>
+    <div class="note small" id="ndir"></div>
+    <div class="scroll" style="flex:1"><table id="ptab"><thead><tr><th>subject</th><th>proposed</th><th>evidence</th></tr></thead><tbody></tbody></table>
+      <h2 title="python port/mods_api/naming_lab/verify.py run --state <savestate>: the queued functions, counted on the cartridge in melonDS">On the cartridge (melonDS)</h2>
+      <div id="vres" class="small" style="padding:0 8px"></div></div>
+  </div>
+  <div class="panel" id="p-methods">
+    <div class="note small" id="mnote">Every function the port defines for the focused class (ROM order), with how often it ran on this instance while focused.</div>
+    <div class="scroll" style="flex:1"><table id="mtab"><thead><tr><th>ROM</th><th>method</th><th class="num">seen</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+</main>
+<div id="tip"></div>
+<div id="src"><h2><span id="srcname"></span><span class="sp"></span><button id="srcclose">close</button></h2><pre id="srcpre"></pre></div>
+<script>
+'use strict';
+const TOKEN = new URLSearchParams(location.hash.slice(1)).get('token') || '';
+const $ = s => document.querySelector(s);
+const hex = (n, w) => (n >>> 0).toString(16).padStart(w || 0, '0');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function api(path, body) {
+  const o = {headers: {'X-Lab-Token': TOKEN}};
+  if (body !== undefined) { o.method = 'POST'; o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); }
+  const r = await fetch(path, o);
+  if (!r.ok) throw new Error(path + ': ' + r.status);
+  return r.json();
+}
+const cmd = (c, reply) => api('/api/cmd', {cmd: c, reply});
+const store = {get: (k, d) => { try { const v = localStorage.getItem('lab.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+               set: (k, v) => { try { localStorage.setItem('lab.' + k, JSON.stringify(v)); } catch (e) {} }};
+
+// ------------------------------------------------------------------ state
+const S = {actors: [], player: 0, fns: [], focus: null, layout: null, cls: null, sel: null,
+           frames: new Map(), lastSnap: null, prev: {}, chg: {}, flash: {}, paused: false, trace: false, sortK: 'dist', sortD: 1,
+           // whole-game activity: one sample per "hot" window (6 frames), the newest last
+           act: [], lastAct: 0,
+           // the cartridge's classes (/api/classes)
+           treeNode: new Map(), other: new Map(), kids: new Map(), roots: [], post: [],
+           open: new Set(store.get('sysOpen', [])), sysSel: null};
+const NFRAMES = 300, ASAMPLES = 100, HOT_EVERY = 6;
+
+// ------------------------------------------------------------------ class names
+// Every place that prints a class goes through cnHtml(): the class as the
+// source spells it, with an English name on hover (the server's, built from
+// config/rom-name-glossary.json).
+function clsInfo(tree) {
+  if (!tree) return null;
+  const n = S.treeNode.get(tree); if (n) return n;
+  const o = S.other.get(tree); return o ? {status: 'none', tree, rom: null, gloss: o.gloss, en: o.en} : null;
+}
+function cn(tree) { return tree || ''; }
+function enName(tree) { const n = clsInfo(tree); return n && n.en && n.en[0] ? n.en[0] : ''; }
+function enTip(tree) {
+  const n = clsInfo(tree); if (!n || !n.en || !n.en[0]) return '';
+  return n.en[0] + (n.en[1] ? ' (' + n.en[1] + ')' : '') + (n.rom && n.rom !== n.tree ? `\nthe cartridge calls it ${n.rom}` : '');
+}
+function cnHtml(tree, extra) {
+  const t = enTip(tree);
+  return `<span class="${t ? 'en' : ''} ${extra || ''}" title="${esc(t)}">${esc(cn(tree))}</span>`;
+}
+function fnLabel(f) { return f.cls ? cn(f.cls) + '::' + f.method : (f.key || f.method); }
+function qn(key) { const i = key.lastIndexOf('::'); return i < 0 ? key : cn(key.slice(0, i)) + key.slice(i); }
+async function loadClasses() {
+  const c = await api('/api/classes');
+  S.classes = c; S.treeNode.clear(); S.other.clear(); S.kids.clear();
+  const byKey = new Map(c.nodes.map(n => [n.key, n]));
+  for (const n of c.nodes) for (const t of [n.tree, ...n.aliases, n.rom]) if (!S.treeNode.has(t)) S.treeNode.set(t, n);
+  for (const o of c.other) S.other.set(o.tree, o);
+  for (const n of c.nodes) {
+    n.names = [n.tree, ...n.aliases];
+    const b = n.base && byKey.get(n.base);
+    if (b) { if (!S.kids.has(b.key)) S.kids.set(b.key, []); S.kids.get(b.key).push(n); } else S.roots.push(n);
+  }
+  const byName = (a, b) => (cn(a.tree) < cn(b.tree) ? -1 : 1);
+  S.roots.sort(byName); for (const k of S.kids.values()) k.sort(byName);
+  // children before parents, for the subtree sums
+  S.post = []; const walk = n => { for (const k of S.kids.get(n.key) || []) walk(k); S.post.push(n); }; S.roots.forEach(walk);
+  const k = c.counts;
+  $('#syscount').textContent = c.error ? c.error : `${k.rtti} RTTI classes · ${k.no_rtti} without`;
+  drawActors(); S.tlDirty = true; S.sysDirty = true; S.hotDirty = true;
+  if (S.focus) setTitle(); if (S.cls) drawMethods();
+}
+
+// ------------------------------------------------------------------ events
+function connect() {
+  const es = new EventSource('/events?token=' + encodeURIComponent(TOKEN));
+  es.onmessage = e => { const m = JSON.parse(e.data); (H[m.t] || (() => {}))(m); };
+  es.onerror = () => { setLink(false); };
+}
+function setLink(on) { $('#link').classList.toggle('on', !!on); $('#linktxt').textContent = on ? 'game connected' : 'waiting for the game'; }
+const H = {
+  hello(m) { (m.fns || []).forEach(f => S.fns[f.id] = f); setLink(m.link); S.brk = m.brk; drawDbg(); if (m.hello) $('#linkgrp').title = 'release ' + (m.hello.release || '-'); if (m.status) H.status({s: m.status, link: m.link}); },
+  status(m) {
+    setLink(m.link); if (m.stale) { $('#linktxt').textContent = 'game rebuilt: restart the lab server'; $('#link').classList.remove('on'); }
+    if (!m.s) return; const s = m.s;
+    $('#tick').textContent = s.tick; $('#level').textContent = s.level; $('#area').textContent = s.area;
+    $('#nact').textContent = s.actors; $('#calls').textContent = s.calls;
+    S.paused = s.paused === '1'; $('#bpause').textContent = S.paused ? 'resume' : 'pause'; $('#bpause').classList.toggle('on', S.paused);
+    S.trace = s.trace === '1'; $('#btrace').classList.toggle('on', S.trace); $('#btrace').textContent = 'trace ' + (S.trace ? 'on' : 'off');
+    const stopped = +(s.stopped || 0);
+    if (!stopped && S.stop) { S.stop = null; drawDbg(); }      // the game went on
+    if (s.brk === '0' && S.brk && !stopped) { S.brk = null; drawDbg(); }
+  },
+  brkset(m) { S.brk = m.brk; drawDbg(); },
+  // a Claude session (labctl focus) chose an actor: show it here too
+  focusreq(m) { if (!S.focus || S.focus.ptr !== m.ptr) focusActor(m.ptr); },
+  brk(m) {
+    S.stop = m;
+    if (m.kind === 'entry') { S.brkBase = null; S.brkChanged = null; S.brkTake = 'base'; }
+    else S.brkTake = 'diff';
+    // nothing in the Inspector yet: show the object it stopped on
+    if (m.actor && (!S.focus || (S.brk && !S.brk.this && S.focus.ptr !== m.this))) focusActor(m.actor.ptr, true);
+    drawDbg(); S.fieldsDirty = true;
+  },
+  actors(m) { S.actors = m.list; S.player = m.player; drawActors(); S.sysDirty = true; },
+  fn(m) { S.fns[m.fn.id] = m.fn; },
+  hits(m) {
+    let f = S.frames.get(m.tick); if (!f) { f = new Map(); S.frames.set(m.tick, f); }
+    for (const [id, n] of m.fns) f.set(id, (f.get(id) || 0) + n);
+    while (S.frames.size > NFRAMES) S.frames.delete(S.frames.keys().next().value);
+    S.tlDirty = true;
+  },
+  act(m) {
+    // per class: the port's functions carry the tree's class name; a node
+    // also counts the calls its subclasses made (`sub`, children first)
+    const fns = new Map(m.fns), cls = new Map(), sub = new Map();
+    for (const [id, n] of m.fns) { const f = S.fns[id]; if (f && f.cls) cls.set(f.cls, (cls.get(f.cls) || 0) + n); }
+    for (const nd of S.post) {
+      let v = 0; for (const t of nd.names) v += cls.get(t) || 0;
+      for (const k of S.kids.get(nd.key) || []) v += sub.get(k.key) || 0;
+      if (v) sub.set(nd.key, v);
+    }
+    S.act.push({tick: m.tick, frames: Math.max(1, m.frames), fns, cls, sub});
+    if (S.act.length > ASAMPLES) S.act.shift();
+    S.lastAct = Date.now(); S.sysDirty = true; S.hotDirty = true;
+  },
+  snap(m) {
+    // change tracking on every snapshot (60 a second); drawing happens at 15 Hz
+    if (S.layout) for (const f of fieldRows()) {
+      const k = f.offset, raw = m.hex.substr(k * 2, Math.max(1, f.size) * 2);
+      if (S.prev[k] !== undefined && S.prev[k] !== raw) { (S.chg[k] = S.chg[k] || []).push(m.tick); S.flash[k] = m.tick; }
+      S.prev[k] = raw;
+    }
+    if (S.stop && S.focus && S.stop.this === S.focus.ptr) {
+      if (S.brkTake === 'base') { S.brkBase = m.hex; S.brkTake = null; }
+      else if (S.brkTake === 'diff' && S.brkBase) { S.brkTake = null; S.brkChanged = diffFields(S.brkBase, m.hex); drawDbg(); }
+    }
+    S.lastSnap = m; S.fieldsDirty = true;
+  },
+  level(m) { clearFocus(); },
+};
+
+// ------------------------------------------------------------------ actors
+function playerPos() { const p = S.actors.find(a => a.ptr === S.player); return p ? [p.x, p.y, p.z] : null; }
+function drawActors() {
+  const pp = playerPos(); const f = $('#afilter').value.toLowerCase();
+  const rows = S.actors.filter(a => !f || a.cls.toLowerCase().includes(f) || enName(a.cls).toLowerCase().includes(f) || String(a.aid) === f || hex(a.ptr).includes(f));
+  for (const a of rows) a.dist = pp ? Math.round(Math.hypot(a.x - pp[0], a.y - pp[1], a.z - pp[2])) : 0;
+  const k = S.sortK, d = S.sortD;
+  rows.sort((a, b) => (a[k] < b[k] ? -d : a[k] > b[k] ? d : 0));
+  $('#atab tbody').innerHTML = rows.map(a => `<tr data-p="${a.ptr}" class="${S.focus && S.focus.ptr === a.ptr ? 'sel' : ''}">
+    <td title="${esc(hex(a.ptr, 8) + ' vtable ' + hex(a.vt, 8) + ' (' + (a.clsHow || 'no vtable symbol') + ')  uid ' + a.uid)}">${cnHtml(a.cls)}${a.ptr === S.player ? ' <span class="pill">you</span>' : ''}</td>
+    <td class="num">${a.dist}</td><td class="num">${a.calls}</td><td class="num">${a.area}</td><td class="num">${a.aid}</td>
+    <td><button class="small tp" title="teleport Mario next to it">tp</button></td></tr>`).join('');
+}
+$('#atab tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr) return; const ptr = +tr.dataset.p;
+  if (e.target.classList.contains('tp')) { const a = S.actors.find(x => x.ptr === ptr); if (a) cmd(`tp ${a.x + 120} ${a.y + 150} ${a.z}`, 'tp'); return; }
+  focusActor(ptr);
+});
+$('#atab thead').addEventListener('click', e => { const k = e.target.dataset.k; if (!k) return; S.sortD = S.sortK === k ? -S.sortD : (k === 'cls' ? 1 : (k === 'dist' ? 1 : -1)); S.sortK = k; drawActors(); });
+$('#afilter').addEventListener('input', drawActors);
+
+// ------------------------------------------------------------------ focus
+function setTitle() {
+  $('#ftitle').innerHTML = `${cnHtml(S.focus.cls, 'own')} <span class="dim">@${hex(S.focus.ptr, 8)} uid ${S.focus.uid}</span>` +
+    (enName(S.focus.cls) ? ` <span class="small">${esc(enName(S.focus.cls))}</span>` : '');
+}
+async function focusActor(ptr, fromStop) {
+  const r = await api('/api/focus', {ptr});
+  if (r.error) { $('#fninfo').textContent = r.error; return; }
+  if (fromStop && S.brkTake !== 'diff') S.brkTake = 'base';
+  S.focus = r.focus; S.layout = r.layout; S.cls = r.class; S.cls.name = r.focus.cls; S.frames.clear(); S.prev = {}; S.chg = {}; S.flash = {}; S.lastSnap = null; S.sel = null;
+  setTitle();
+  $('#hdr').textContent = (r.layout.header || 'no header') + (r.layout.size ? ' · 0x' + hex(r.layout.size) + ' bytes' : '');
+  $('#hdr').title = 'base chain: ' + r.layout.chain.map(cn).join(' : ');
+  drawActors(); drawMethods(); midTab('insp');
+  if (!S.trace) cmd('trace 1', 'status');
+}
+function clearFocus() { S.focus = null; S.layout = null; S.frames.clear(); api('/api/unfocus', {}); $('#ftitle').innerHTML = '<span class="dim">click an actor (left), or a class in Systems</span>'; $('#ftab tbody').innerHTML = ''; drawActors(); S.tlDirty = true; }
+$('#bunfocus').onclick = clearFocus;
+
+// ------------------------------------------------------------------ timeline
+const tl = $('#tl'), tip = $('#tip');
+function showTip(e, text) { tip.textContent = text; tip.style.display = 'block'; tip.style.left = Math.min(e.clientX + 14, innerWidth - 540) + 'px'; tip.style.top = (e.clientY + 10) + 'px'; }
+function fnClass(f) {
+  if (!S.focus || !f) return 'other';
+  if (f.cls === S.focus.cls) return 'own';
+  return (S.layout && S.layout.chain.includes(f.cls)) ? 'base' : 'other';
+}
+function tlRows() {
+  const seen = new Map();
+  for (const fr of S.frames.values()) for (const [id, n] of fr) seen.set(id, (seen.get(id) || 0) + n);
+  const ids = [...seen.keys()].filter(id => $('#tlport').checked || (S.fns[id] && S.fns[id].rom));
+  const order = {own: 0, base: 1, other: 2};
+  ids.sort((a, b) => order[fnClass(S.fns[a])] - order[fnClass(S.fns[b])] || ((S.fns[a] && S.fns[a].rom ? S.fns[a].rom.addr : 1e12) - (S.fns[b] && S.fns[b].rom ? S.fns[b].rom.addr : 1e12)));
+  return {ids, seen};
+}
+const LABELW = 250, RH = 13;
+function drawTimeline() {
+  const {ids} = tlRows();
+  const W = tl.parentElement.clientWidth;
+  const room = Math.max(120, ($('#p-insp').clientHeight || 600) * 0.45);
+  const Hh = Math.max(40, Math.min(room, ids.length * RH + 16));
+  if (tl.width !== W || tl.height !== Hh) { tl.width = W; tl.height = Hh; }
+  const g = tl.getContext('2d'); g.fillStyle = '#121418'; g.fillRect(0, 0, W, Hh);
+  const ticks = [...S.frames.keys()]; const last = ticks.length ? ticks[ticks.length - 1] : 0;
+  const cw = (W - LABELW) / NFRAMES;
+  g.font = '11px Consolas, monospace'; g.textBaseline = 'middle';
+  const col = {own: '#5aa9ff', base: '#9aa3b2', other: '#e8a33d'};
+  ids.forEach((id, r) => {
+    const f = S.fns[id] || {method: '#' + id}; const y = 14 + r * RH; const c = fnClass(f);
+    if (y > Hh) return;
+    if (S.sel === id) { g.fillStyle = '#26364d'; g.fillRect(0, y - 1, W, RH); }
+    g.fillStyle = col[c];
+    const label = c === 'own' ? f.method || f.key : fnLabel(f);
+    g.fillText(label.length > 36 ? label.slice(0, 35) + '…' : label, 4, y + RH / 2 - 1);
+    for (const [t, fr] of S.frames) {
+      const n = fr.get(id); if (!n) continue;
+      const x = LABELW + (NFRAMES - 1 - (last - t)) * cw; if (x < LABELW) continue;
+      g.globalAlpha = Math.min(1, 0.45 + 0.15 * n); g.fillRect(x, y, Math.max(1, cw - 0.3), RH - 2); g.globalAlpha = 1;
+    }
+  });
+  g.fillStyle = '#8a93a2';
+  const hidden = ids.length - Math.floor((Hh - 14) / RH);
+  g.fillText(ids.length ? `${ids.length} functions · ${S.frames.size} frames · newest at right (tick ${last})${hidden > 0 ? ` · ${hidden} more below (narrow with "port code" off)` : ''}`
+                        : (S.focus ? 'waiting for calls (is the trace on? is the actor in a shown area?)' : 'no actor focused'), LABELW, 7);
+  tl._ids = ids; tl._last = last; tl._cw = cw;
+}
+function tlHit(e) {
+  const r = tl.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top;
+  const row = Math.floor((y - 14) / RH); const id = (tl._ids || [])[row];
+  const t = x > LABELW ? tl._last - (NFRAMES - 1 - Math.floor((x - LABELW) / tl._cw)) : null;
+  return {id, t};
+}
+tl.addEventListener('mousemove', e => {
+  const {id, t} = tlHit(e); const f = S.fns[id];
+  if (!f) { tip.style.display = 'none'; return; }
+  const n = t !== null && S.frames.get(t) ? (S.frames.get(t).get(id) || 0) : null;
+  let s = f.sig || f.key; if (f.rom) s += `\nROM ${f.rom.module} 0x${hex(f.rom.addr, 8)} ${f.rom.name}`;
+  if (n !== null) s += `\ntick ${t}: ${n} call${n === 1 ? '' : 's'}`;
+  showTip(e, s);
+});
+tl.addEventListener('mouseleave', () => tip.style.display = 'none');
+tl.addEventListener('click', e => { const {id} = tlHit(e); if (id === undefined) return; S.sel = id; showFn(S.fns[id], $('#fninfo')); S.tlDirty = true; });
+function romTxt(r) { return r ? `${r.module} 0x${hex(r.addr, 8)}${r.size ? ' (0x' + hex(r.size) + ' bytes)' : ''}` : 'no ROM address'; }
+// one function's card, in the Inspector's or the Systems view's info box
+// what the person is looking at, for a Claude session reading /api/state (labctl.py)
+function tellUi(sel) { const k = JSON.stringify(sel); if (S.uiSent === k) return; S.uiSent = k; api('/api/ui', sel); }
+function showFn(f, box) {
+  if (!f) return;
+  const id = f.id, inInsp = box.id === 'fninfo';
+  tellUi({fn: id, where: box.id});
+  const calls = inInsp ? (tlRows().seen.get(id) || 0) + ' calls in view' : actPerFrame(s => s.fns.get(id)) + ' calls/frame in the whole game';
+  box.classList.remove('dim');
+  box.innerHTML = `<div><b class="${inInsp ? fnClass(f) : 'own'}">${esc(fnLabel(f))}</b> <span class="dim">${calls}</span></div>
+   <div class="dim small">${esc(f.sig)}</div>
+   <div class="small">ROM: ${esc(romTxt(f.rom))} ${f.rom ? '· <span class="dim">' + esc(f.rom.name) + '</span>' : ''}</div>
+   <div class="small dim">port: ${(f.addrs || []).map(a => '0x' + hex(a, 8)).join(', ')} · ${esc(f.obj)}</div>
+   <div style="margin-top:3px">${f.addrs && f.addrs.length ? (S.focus ? `<button class="bbrk" data-t="${S.focus.ptr}" title="stop the game when this runs on the actor in the Inspector">break on #${S.focus.aid ?? ''} ${esc(cn(S.focus.cls))}</button> ` : '') +
+       '<button class="bbrk" data-t="0" title="stop the game the next time this runs, on any object">break on any</button> ' : ''}
+     ${f.rom ? '<button class="bsrc">source</button> ' : ''}<button class="bprop">propose a name</button>
+     <button class="bpatch" title="Copies the command that writes a hot-patch skeleton for this function. Patches are compiled and applied from your terminal (patch.py), never from this page.">copy patch cmd</button></div>`;
+  if (f.rom) box.querySelector('.bsrc').onclick = () => openSource(f.rom.name);
+  box.querySelectorAll('.bbrk').forEach(b => b.onclick = () => setBreak(f.id, +b.dataset.t));
+  box.querySelector('.bpatch').onclick = e => {
+    // the qualified name lets patch.py pick the thiscall body over its extern "C" shim
+    const t = f.key.includes('::') ? `"${f.key}"` : '0x' + hex(f.addrs[0], 8);
+    const file = (f.method || 'fn').replace(/\W/g, '_') + '_patch.c';
+    const c = `python port/mods_api/naming_lab/patch.py new ${t} -o ${file}`;
+    if (!box.querySelector('code')) box.insertAdjacentHTML('beforeend', `<div class="small"><code>${esc(c)}</code></div>`);
+    if (navigator.clipboard) navigator.clipboard.writeText(c).then(() => { e.target.textContent = 'copied'; }, () => {});
+  };
+  box.querySelector('.bprop').onclick = () => fillProposal(f.key, f.rom ? `${f.rom.module} 0x${hex(f.rom.addr, 8)} ${f.rom.name}` : '', f.method,
+     inInsp ? `Runs on ${S.focus ? S.focus.cls : '?'} in ${countFramesWith(id)} of the last ${S.frames.size} frames (level ${$('#level').textContent}).`
+            : `Runs ${actPerFrame(s => s.fns.get(id))} times a frame in the whole game (level ${$('#level').textContent}).`);
+}
+function countFramesWith(id) { let n = 0; for (const fr of S.frames.values()) if (fr.get(id)) n++; return n; }
+
+// ------------------------------------------------------------------ fields
+const DEC = {
+  u8: [1, (v, o) => v.getUint8(o)], s8: [1, (v, o) => v.getInt8(o)], bool: [1, (v, o) => v.getUint8(o)], char: [1, (v, o) => v.getInt8(o)],
+  u16: [2, (v, o) => v.getUint16(o, true)], s16: [2, (v, o) => v.getInt16(o, true)], short: [2, (v, o) => v.getInt16(o, true)],
+  u32: [4, (v, o) => v.getUint32(o, true)], unsigned: [4, (v, o) => v.getUint32(o, true)], s32: [4, (v, o) => v.getInt32(o, true)], int: [4, (v, o) => v.getInt32(o, true)],
+  float: [4, (v, o) => +v.getFloat32(o, true).toFixed(4)],
+  Fix12i: [4, (v, o) => fx(v.getInt32(o, true))], 'Fix12<int>': [4, (v, o) => fx(v.getInt32(o, true))], 'Fix12<s32>': [4, (v, o) => fx(v.getInt32(o, true))],
+};
+DEC['unsigned int'] = DEC.u32; DEC['unsigned char'] = DEC.u8; DEC['unsigned short'] = DEC.u16; DEC['signed char'] = DEC.s8; DEC.long = DEC.s32;
+function fx(i) { return Math.abs(i) >= 0x40000000 ? '0x' + hex(i, 8) : +(i / 4096).toFixed(3); }
+function bytesOf(o, n) { const b = S.snapBytes; let s = ''; for (let i = 0; i < n && o + i < b.length; i++) s += hex(b[o + i], 2); return s; }
+function decodeField(f, view) {
+  const t = f.type.replace(/^const\s+/, '').trim(); const o = f.offset;
+  if (o + Math.max(1, f.size) > view.byteLength) return {txt: '…', raw: ''};
+  const raw = bytesOf(o, f.size);
+  if (t.includes('*')) { const p = view.getUint32(o, true); return {txt: p ? '0x' + hex(p, 8) + ptrName(p) : 'null', raw, edit: 'u32'}; }
+  if (t === 'Vector3' || t === 'VecFx32') return {txt: [0, 4, 8].map(k => fx(view.getInt32(o + k, true))).join(', '), raw, edit: 'vec'};
+  if (t === 'Vector3_16') return {txt: [0, 2, 4].map(k => view.getInt16(o + k, true)).join(', '), raw, edit: 'vec16'};
+  const d = DEC[t];
+  if (d && !f.array) { const v = d[1](view, o); return {txt: t === 'bool' ? (v ? 'true' : 'false') : String(v) + (t.startsWith('u') && d[0] > 1 && typeof v === 'number' && v > 9 ? '  0x' + hex(v) : ''), raw, edit: t}; }
+  return {txt: raw.length > 48 ? raw.slice(0, 48) + '…' : raw, raw, edit: 'hex'};
+}
+function ptrName(p) { const a = S.actors.find(x => x.ptr === p); return a ? ' → ' + cn(a.cls) : ''; }
+function fieldRows() {
+  const L = S.layout; if (!L) return [];
+  const out = []; let end = 0; const size = S.focus.size;
+  const add = (o, n) => { for (let p = o; p < o + n; p += 4) { const l = Math.min(4, o + n - p); out.push({offset: p, size: l, type: l === 4 ? 'u32' : 'u8[' + l + ']', name: 'unk_' + hex(p), owner: '', gap: true, array: l === 4 ? '' : '[' + l + ']'}); } };
+  for (const f of L.fields) {
+    if (f.offset >= size) break;
+    if ($('#showunk').checked && f.offset > end) add(end, Math.min(f.offset - end, 0x80));
+    out.push(f); end = Math.max(end, f.offset + Math.max(1, f.size));
+  }
+  if ($('#showunk').checked && end < size) add(end, Math.min(size - end, 0x80));
+  return out;
+}
+function drawFields() {
+  if (!S.lastSnap || !S.layout) return;
+  const hx = S.lastSnap.hex; const b = new Uint8Array(hx.length / 2);
+  for (let i = 0; i < b.length; i++) b[i] = parseInt(hx.substr(i * 2, 2), 16);
+  S.snapBytes = b; const view = new DataView(b.buffer);
+  const tick = S.lastSnap.tick; const rows = fieldRows(); const only = $('#onlychg').checked;
+  const html = [];
+  for (const f of rows) {
+    const d = decodeField(f, view); const k = f.offset;
+    const changed = S.flash[k] !== undefined && S.flash[k] > tick - 8;
+    const hist = (S.chg[k] || []).filter(t => t > tick - NFRAMES); S.chg[k] = hist;
+    if (only && !hist.length) continue;
+    const doc = (f.doc || '') + (f.note ? '\n' + f.note : '');
+    html.push(`<tr class="${S.brkChanged && S.brkChanged.some(c => c.offset === k) ? 'brkchg' : changed ? 'chg' : 'fade'}" data-o="${k}"><td class="dim">0x${hex(k, 3)}</td><td class="small">${f.owner ? cnHtml(f.owner, f.owner === S.focus.cls ? 'own' : 'base') : ''}</td>
+      <td class="dim">${esc(f.type)}${esc(f.array || '')}</td>${f.named
+        ? `<td class="named" title="${esc(`named on ${f.named.rev} as ${f.named.owner}::${f.named.name} (${f.named.type}); this build still calls it ${f.name}` + (f.named.doc ? '\n' + f.named.doc : ''))}">${esc(f.named.name)}</td>`
+        : `<td class="${f.gap ? 'unk' : ''}" title="${esc(doc)}">${esc(f.name)}</td>`}
+      <td class="val" data-e="${d.edit || ''}" title="${d.edit ? 'click to type a new value; Enter writes it into the game (it works while stopped at a breakpoint too), Esc cancels' : ''}">${esc(d.txt)}</td><td class="num dim">${hist.length || ''}</td><td><button class="small ww" title="who writes this field? (hardware data breakpoint, 1 s of game time)">who?</button></td></tr>`);
+  }
+  $('#ftab tbody').innerHTML = html.join('');
+}
+$('#ftab tbody').addEventListener('click', e => {
+  const td = e.target.closest('td.val'); if (!td || !S.focus || td.querySelector('input')) return;
+  const o = +td.parentElement.dataset.o; const kind = td.dataset.e; if (!kind) return;
+  const f = fieldRows().find(x => x.offset === o);
+  const inp = document.createElement('input'); inp.value = td.textContent.split('  ')[0].split(' → ')[0]; inp.size = 24;
+  td.textContent = ''; td.appendChild(inp); inp.focus(); inp.select(); S.editing = true;
+  const done = async ok => {
+    S.editing = false; if (!ok) { S.fieldsDirty = true; return; }
+    const h = encodeVal(kind, inp.value, f.size); if (!h) { inp.style.borderColor = 'red'; S.editing = true; return; }
+    const r = await cmd(`poke ${hex(S.focus.ptr + o)} ${h}`, 'poked');
+    const wrote = r.reply && r.reply[0] && r.reply[0].startsWith('poked');
+    $('#fninfo').classList.remove('dim');
+    $('#fninfo').innerHTML = wrote ? `wrote <b>${esc(inp.value)}</b> to ${esc(cn(S.focus.cls))}.${esc(f.named ? f.named.name : f.name)} <span class="dim">(+0x${hex(o)}, bytes ${h})</span>`
+                                : `<span class="bad">could not write ${esc(f.name)}: ${esc(r.reply && r.reply[0] || 'no reply from the game')}</span>`;
+    S.fieldsDirty = true;
+  };
+  inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') done(true); if (ev.key === 'Escape') done(false); });
+  inp.addEventListener('blur', () => S.editing && done(false));
+});
+function le(v, n) { let s = ''; for (let i = 0; i < n; i++) { s += hex(Number((BigInt.asUintN(64, BigInt(v)) >> BigInt(8 * i)) & 0xffn), 2); } return s; }
+function encodeVal(kind, txt, size) {
+  txt = txt.trim();
+  if (kind === 'hex') { const h = txt.replace(/\s+/g, ''); return /^([0-9a-f]{2})+$/i.test(h) ? h : null; }
+  const n = DEC[kind] ? DEC[kind][0] : 4;
+  if (/^Fix12/.test(kind)) { const f = parseFloat(txt); return isNaN(f) ? null : le(Math.round(f * 4096), 4); }
+  if (kind === 'float') { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, parseFloat(txt), true); return [0, 1, 2, 3].map(i => hex(b.getUint8(i), 2)).join(''); }
+  if (kind === 'bool') return txt === 'true' || txt === '1' ? '01' : '00';
+  if (kind === 'vec' || kind === 'vec16') {
+    const v = txt.split(/[\s,]+/).filter(Boolean).map(Number); if (v.length !== 3 || v.some(isNaN)) return null;
+    return v.map(x => kind === 'vec' ? le(Math.round(x * 4096), 4) : le(Math.round(x), 2)).join('');
+  }
+  const v = txt.startsWith('0x') ? parseInt(txt, 16) : parseInt(txt, 10); if (isNaN(v)) return null;
+  return le(v, n);
+}
+$('#hotgame').onchange = () => S.hotDirty = true; $('#tlport').onchange = () => S.tlDirty = true;
+$('#onlychg').onchange = () => S.fieldsDirty = true; $('#showunk').onchange = () => S.fieldsDirty = true;
+$('#ftab tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr || e.target.closest('td.val') || !S.focus) return;
+  if (e.target.closest('button.ww')) { whoWrites(+tr.dataset.o); return; }
+  const o = +tr.dataset.o; const f = fieldRows().find(x => x.offset === o); if (!f) return;
+  const hist = (S.chg[o] || []);
+  fillProposal(`${S.focus.cls}+0x${hex(o)}`, '', f.name, `${f.type}${f.array || ''} at 0x${hex(o)}; changed in ${hist.length} of the last ${NFRAMES} frames; value now ${tr.children[4].textContent}.`);
+});
+
+// who writes a field: the server arms a CPU data breakpoint (DR0-3) on the
+// field for one second of game time, then names each writing instruction's
+// function and the two callers above it.
+async function whoWrites(o) {
+  const f = fieldRows().find(x => x.offset === o); if (!f) return;
+  const len = f.size >= 4 ? 4 : f.size >= 2 ? 2 : 1; const where = `${cn(S.focus.cls)}+0x${hex(o)} (${f.named ? f.named.name : f.name})`;
+  $('#fninfo').classList.remove('dim'); $('#fninfo').textContent = `watching writes to ${where} for 1 s...`;
+  let r; try { r = await api('/api/whowrites', {addr: S.focus.ptr + o, len, secs: 1.0}); } catch (err) { r = {error: String(err)}; }
+  if (r.error) { $('#fninfo').textContent = r.error; return; }
+  const fn = x => x ? `<span class="${x.cls === S.focus.cls ? 'own' : 'other'}">${esc(qn(x.qual))}</span><span class="dim">+0x${hex(x.off)}${x.rom ? ' · ROM ' + hex(x.rom.addr, 8) : ''}</span>` : '<span class="dim">?</span>';
+  const rows = r.hits.map(h => `<tr><td class="num">${h.n}</td><td>${fn(h.writer)}</td><td class="small">${fn(h.caller)}</td><td class="small">${fn(h.caller2)}</td></tr>`).join('');
+  $('#fninfo').innerHTML = `<div><b>writes to ${esc(where)}</b> <span class="dim">${len} byte(s), ${r.frames ?? '?'} frames${r.lost ? ', ' + r.lost + ' not recorded' : ''}</span></div>` +
+    (rows ? `<table class="small"><tr><th class="num">n</th><th>writer</th><th>called from</th><th>and from</th></tr>${rows}</table>` : '<div class="dim">nothing wrote it in that second</div>') +
+    '<div class="small dim">port behaviour: a candidate until the ROM agrees</div>';
+}
+
+// ------------------------------------------------------------------ breakpoints
+// The game stops at the first instruction of the function (nothing of it has
+// run), or just after it returns. While stopped the page still reads and
+// writes memory, so fields can be edited before continuing.
+async function setBreak(fid, thisPtr) {
+  const r = await api('/api/brk', {fn: fid, this: thisPtr});
+  if (!r.brk) alertBox('could not arm the breakpoint: ' + r.reply);
+}
+const go = how => api('/api/go', {how});
+function word(v) {
+  const a = S.actors.find(x => x.ptr === v);
+  if (a) return `<span title="0x${hex(v, 8)}">${cnHtml(a.cls)} #${a.aid}</span>`;
+  const i = v | 0; return `0x${hex(v, 8)}` + (Math.abs(i) < 100000 ? ` <span class="dim">(${i})</span>` : '');
+}
+function params(f) {   // the parameter list from a signature, without `this`
+  const m = /\((.*)\)/.exec(f && f.sig || ''); if (!m || !m[1].trim() || m[1].trim() === 'void') return [];
+  return m[1].split(',').map(x => x.trim());
+}
+function diffFields(a, b) {
+  const A = hexBytes(a), B = hexBytes(b), out = [];
+  for (const f of fieldRows()) {
+    const n = Math.max(1, f.size); let same = true;
+    for (let i = f.offset; i < f.offset + n && i < A.length; i++) if (A[i] !== B[i]) { same = false; break; }
+    if (!same) out.push({offset: f.offset, name: f.named ? f.named.name : f.name, from: decodeIn(A, f).txt, to: decodeIn(B, f).txt});
+  }
+  return out;
+}
+function hexBytes(hx) { const b = new Uint8Array(hx.length / 2); for (let i = 0; i < b.length; i++) b[i] = parseInt(hx.substr(i * 2, 2), 16); return b; }
+function decodeIn(b, f) { const keep = S.snapBytes; S.snapBytes = b; const d = decodeField(f, new DataView(b.buffer)); S.snapBytes = keep; return d; }
+function drawDbg() {
+  const el = $('#dbg'), st = S.stop, b = S.brk;
+  el.className = st ? 'stopped' : b ? 'armed' : '';
+  if (!st && !b) { el.innerHTML = ''; return; }
+  const bf = b && S.fns[b.fn];
+  const armed = b ? `breakpoint: <b>${esc(bf ? fnLabel(bf) : '?')}</b> ${b.this ? 'on ' + word(b.this) : '<span class="dim">on any object</span>'}` : '';
+  if (!st) { el.innerHTML = `<div class="row"><span>●</span>${armed}<span class="dim small">the game stops the next time it runs</span><span style="flex:1"></span><button id="dclear">remove</button></div>`; }
+  else {
+    const f = S.fns[st.fn];
+    const ps = params(f), args = st.args || [];
+    const argTxt = (st.thiscall ? '' : '') + ps.map((p, i) => `<span class="dim">${esc(p)}</span> = ${word(args[i] >>> 0)}`).join(' · ');
+    const stack = (st.stack || []).map(fr => { const g = S.fns[fr.id]; return `<span data-r="${esc(g && g.rom ? g.rom.name : '')}" title="0x${hex(fr.addr, 8)}">${g ? esc(fnLabel(g)) + '<span class="dim">+0x' + hex(fr.off) + '</span>' : '0x' + hex(fr.addr, 8)}</span>`; }).join(' ← ');
+    const ch = S.brkChanged;
+    const changes = st.kind !== 'ret' ? '' : !S.focus || S.focus.ptr !== st.this ? '<span class="dim">focus the object to see what it changed</span>'
+      : ch == null ? '<span class="dim">reading the fields…</span>'
+      : ch.length ? `changed ${ch.length} field${ch.length > 1 ? 's' : ''}: ` + ch.slice(0, 12).map(c => `<b>${esc(c.name)}</b> ${esc(c.from)} → <span class="own">${esc(c.to)}</span>`).join(' · ') + (ch.length > 12 ? ' …' : '')
+      : 'changed no field of this object';
+    el.innerHTML = `<div class="row"><b>⏸ ${st.kind === 'ret' ? 'returned from' : 'stopped at the start of'} ${esc(f ? fnLabel(f) : '?')}</b>
+        <span class="dim">tick ${st.tick}</span> <span>this = ${st.this ? word(st.this) : '-'}</span>
+        ${st.actor && (!S.focus || S.focus.ptr !== st.this) ? '<button id="dfocus">inspect it</button>' : ''}
+        <span style="flex:1"></span>
+        ${st.kind === 'entry' ? '<button id="dret" title="let this call finish, stop right after it returns, and show what it changed">run to return <kbd>F10</kbd></button>' : ''}
+        <button id="dnext" title="go on until the next call">continue <kbd>F8</kbd></button>
+        <button id="doff" title="remove the breakpoint and let the game run">remove &amp; run</button>
+        ${f && f.rom ? '<button id="dsrc">source</button>' : ''}</div>
+      <div class="row small">${st.kind === 'ret' ? `returned <b>${word(st.eax >>> 0)}</b> <span class="dim">(eax; ${esc((f && f.sig || '').split(' ')[0] || '?')})</span> · ${changes}` : (argTxt || '<span class="dim">no arguments</span>')}</div>
+      <div class="row small stk"><span class="dim">called from</span> ${stack || '?'}</div>
+      ${st.kind === 'entry' ? '<div class="row small dim">stopped: the game is frozen mid-frame. Fields still read and edit; change one, then run to return to see what the function does with it.</div>' : ''}`;
+    const q = s => el.querySelector(s);
+    if (q('#dret')) q('#dret').onclick = () => go('ret');
+    q('#dnext').onclick = () => go('next'); q('#doff').onclick = () => go('off');
+    if (q('#dfocus')) q('#dfocus').onclick = () => focusActor(st.actor.ptr, true);
+    if (q('#dsrc')) q('#dsrc').onclick = () => openSource(f.rom.name);
+    el.querySelectorAll('.stk span[data-r]').forEach(x => x.onclick = () => x.dataset.r && openSource(x.dataset.r));
+  }
+  const c = el.querySelector('#dclear'); if (c) c.onclick = () => api('/api/brk', {clear: true});
+}
+document.addEventListener('keydown', e => {
+  if (!S.stop || e.target.closest('input,textarea')) return;
+  if (e.key === 'F8') { e.preventDefault(); go('next'); }
+  if (e.key === 'F10' && S.stop.kind === 'entry') { e.preventDefault(); go('ret'); }
+});
+
+// ------------------------------------------------------------------ class methods
+function drawMethods() {
+  if (!S.cls) return; const {seen} = tlRows(); const byKey = {}; for (const id of seen.keys()) if (S.fns[id]) byKey[S.fns[id].key] = seen.get(id);
+  const focused = S.focus && S.cls.name === S.focus.cls;
+  $('#mnote').innerHTML = `Every function the port defines for ${cnHtml(S.cls.name, 'own')} (ROM order)` + (focused ? ', with how often it ran on this instance while focused.' : '. Click one for its source.');
+  $('#mtab tbody').innerHTML = S.cls.methods.map(m => `<tr data-r="${esc(m.rom ? m.rom.name : '')}"><td class="dim">${m.rom ? hex(m.rom.addr, 8) : '-'}</td>
+    <td title="${esc(m.sig)}">${esc(m.method)}</td><td class="num">${focused ? byKey[m.key] || '' : ''}</td></tr>`).join('');
+}
+$('#mtab tbody').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr && tr.dataset.r) openSource(tr.dataset.r); });
+async function showClassTab(tree) {
+  const r = await api('/api/class?name=' + encodeURIComponent(tree));
+  S.cls = r.class; S.cls.name = tree; drawMethods(); tab('methods');
+}
+
+// ------------------------------------------------------------------ activity (whole game)
+// mean calls per frame over the last `n` samples for one getter (sample -> count)
+function actPerFrame(get, n) {
+  const xs = S.act.slice(-(n || ASAMPLES)); let c = 0, f = 0;
+  for (const s of xs) { c += get(s) || 0; f += s.frames; }
+  const v = f ? c / f : 0; return v >= 100 ? Math.round(v) : +v.toFixed(v >= 10 ? 1 : 2);
+}
+function drawHot() {
+  const xs = S.act.slice(-10); const tot = new Map(); let frames = 0;   // ~1 s
+  for (const s of xs) { frames += s.frames; for (const [id, n] of s.fns) tot.set(id, (tot.get(id) || 0) + n); }
+  let list = [...tot].map(([id, n]) => ({f: S.fns[id], n})).filter(x => x.f && (!$('#hotgame').checked || x.f.rom));
+  list.sort((a, b) => b.n - a.n); list = list.slice(0, 150);
+  $('#htab tbody').innerHTML = list.map(({f, n}) => `<tr data-i="${f.id}"><td class="num">${(n / Math.max(1, frames)).toFixed(1)}</td><td title="${esc(f.sig || f.key)}\n${esc(f.obj || '')}">${f.cls ? cnHtml(f.cls) + '::' + esc(f.method) : esc(f.key)}</td><td class="dim">${f.rom ? hex(f.rom.addr, 8) : ''}</td></tr>`).join('')
+    || `<tr><td colspan=3 class="dim">${S.trace ? 'waiting for the first sample' : 'the trace is off: turn it on (header)'}</td></tr>`;
+}
+$('#htab tbody').addEventListener('click', e => { const tr = e.target.closest('tr'); if (!tr || !tr.dataset.i) return; const f = S.fns[+tr.dataset.i]; if (f) { midTab('sys'); selectSys({type: 'fn', f}); } });
+
+// ------------------------------------------------------------------ systems
+// The cartridge's own class tree (RTTI), one row per class, with a strip of
+// its calls per frame. A collapsed class draws itself plus everything derived
+// from it; an open one draws its own methods and lists its subclasses below.
+const sysC = $('#sys'), SRH = 15;
+const SLW = () => Math.min(360, Math.max(220, sysC.width * 0.38));
+function liveCounts() { const m = new Map(); for (const a of S.actors) m.set(a.cls, (m.get(a.cls) || 0) + 1); return m; }
+function sysRows() {
+  const q = $('#sysfilter').value.toLowerCase(), onlyRun = $('#sysactive').checked;
+  const live = liveCounts(); S.live = live;
+  const ran = new Set(); for (const s of S.act) for (const k of s.sub.keys()) ran.add(k);
+  const ranCls = new Set(); for (const s of S.act) for (const k of s.cls.keys()) ranCls.add(k);
+  const inst = n => n.names.reduce((v, t) => v + (live.get(t) || 0), 0);
+  const match = n => (!q || [n.tree, n.rom, n.gloss, n.en && n.en[0], ...n.aliases].some(x => x && x.toLowerCase().includes(q)));
+  // a class is kept if it, or anything below it, matches and (when asked) is running
+  const keep = new Map();
+  for (const n of S.post) {
+    let k = match(n) && (!onlyRun || ran.has(n.key) || inst(n) > 0);
+    for (const c of S.kids.get(n.key) || []) k = k || keep.get(c.key);
+    keep.set(n.key, k);
+  }
+  const forced = !!q;   // a filter opens the path down to every match
+  const rows = [];
+  const methods = (names, depth) => {
+    const ids = new Set(); for (const s of S.act) for (const id of s.fns.keys()) { const f = S.fns[id]; if (f && f.cls && names.includes(f.cls)) ids.add(id); }
+    [...ids].map(id => S.fns[id]).sort((a, b) => (a.rom ? a.rom.addr : 1e12) - (b.rom ? b.rom.addr : 1e12))
+      .forEach(f => rows.push({type: 'fn', f, depth}));
+  };
+  const visit = (n, depth) => {
+    if (!keep.get(n.key)) return;
+    const kids = S.kids.get(n.key) || [], open = S.open.has(n.key) || (forced && kids.some(c => keep.get(c.key)));
+    rows.push({type: 'cls', n, depth, open, kids: kids.length, inst: inst(n)});
+    if (!open) return;
+    if (S.open.has(n.key)) methods(n.names, depth + 1);   // a path a filter opened lists no methods; click to see them
+    for (const c of kids) visit(c, depth + 1);
+  };
+  S.roots.forEach(n => visit(n, 0));
+  // classes the cartridge has no RTTI record for: no hierarchy to show, so a flat group
+  const others = [...S.other.values()].filter(o => (!q || o.tree.toLowerCase().includes(q) || (o.gloss || '').toLowerCase().includes(q) || (o.en && o.en[0] || '').toLowerCase().includes(q))
+    && (!onlyRun || ranCls.has(o.tree) || live.get(o.tree)));
+  if (others.length) {
+    const open = S.open.has('#none') || !!q;
+    rows.push({type: 'group', key: '#none', label: `no RTTI record (${others.length}${onlyRun ? ' running' : ''})`, open, depth: 0});
+    if (open) for (const o of others.sort((a, b) => actPerFrame(s => s.cls.get(b.tree)) - actPerFrame(s => s.cls.get(a.tree)) || (a.tree < b.tree ? -1 : 1))) {
+      const k = '#o:' + o.tree, op = S.open.has(k);
+      rows.push({type: 'other', o, key: k, open: op, depth: 1, inst: live.get(o.tree) || 0});
+      if (op) methods([o.tree], 2);
+    }
+  }
+  return rows;
+}
+function rowValue(r, s) {
+  if (r.type === 'fn') return s.fns.get(r.f.id) || 0;
+  if (r.type === 'other') return s.cls.get(r.o.tree) || 0;
+  if (r.type === 'cls') return r.open || !r.kids ? r.n.names.reduce((v, t) => v + (s.cls.get(t) || 0), 0) : s.sub.get(r.n.key) || 0;
+  return 0;
+}
+function drawSystems() {
+  const wrap = $('#syswrap'); if (!wrap.clientHeight) return;
+  const rows = sysRows(); S.sysRowsCache = rows;
+  const W = wrap.clientWidth, Hh = wrap.clientHeight;
+  if (sysC.width !== W || sysC.height !== Hh) { sysC.width = W; sysC.height = Hh; }
+  $('#sysspacer').style.height = Math.max(0, rows.length * SRH + 8 - Hh) + 'px';
+  const g = sysC.getContext('2d'); g.fillStyle = '#121418'; g.fillRect(0, 0, W, Hh);
+  g.font = '11px Consolas, monospace'; g.textBaseline = 'middle';
+  const top = wrap.scrollTop, first = Math.floor(top / SRH), lw = SLW(), sw = W - lw - 4, cw = sw / ASAMPLES;
+  const col = {rom: '#d8dce3', coined: '#d8dce3', unnamed: '#d8dce3', none: '#d8dce3'};
+  for (let i = first; i < rows.length && (i - first) * SRH < Hh; i++) {
+    const r = rows[i], y = i * SRH - top, x0 = 6 + r.depth * 12;
+    if (S.sysSel && ((r.type === 'cls' && S.sysSel.type === 'cls' && S.sysSel.n === r.n) || (r.type === 'fn' && S.sysSel.type === 'fn' && S.sysSel.f.id === r.f.id) || (r.type === 'other' && S.sysSel.type === 'other' && S.sysSel.o === r.o))) {
+      g.fillStyle = '#26364d'; g.fillRect(0, y, W, SRH);
+    }
+    let label, color, arrow = '';
+    if (r.type === 'group') { label = r.label; color = '#8a93a2'; arrow = r.open ? '▾' : '▸'; }
+    else if (r.type === 'cls') { label = cn(r.n.tree); color = col[r.n.status]; arrow = r.open ? '▾' : '▸'; }
+    else if (r.type === 'other') { label = r.o.tree; color = col.none; arrow = r.open ? '▾' : '▸'; }
+    else { label = r.f.method || r.f.key; color = r.f.rom ? '#7fb7f0' : '#5d6675'; }
+    g.fillStyle = '#5d6675'; if (arrow) g.fillText(arrow, x0, y + SRH / 2);
+    g.fillStyle = color; if (r.type === 'fn') g.font = 'italic 11px Consolas, monospace';
+    let t = label; const room = lw - x0 - 14 - (r.inst ? 34 : 0) - 44;
+    while (t.length > 3 && g.measureText(t).width > room) t = t.slice(0, -2);
+    if (t !== label) t += '…';
+    g.fillText(t, x0 + 12, y + SRH / 2);
+    g.font = '11px Consolas, monospace';
+    if (r.inst) { g.fillStyle = '#62d17a'; g.fillText('×' + r.inst, lw - 80, y + SRH / 2); }
+    if (r.type === 'group') continue;
+    // the strip
+    const own = r.type === 'fn' || r.type === 'other' || r.open || !r.kids;
+    // a bar per sample, its height against this row's own peak, so a class
+    // that runs 700 times a frame and one that runs twice both show their rhythm
+    let sum = 0, fr = 0, peak = 0; const vs = S.act.map(s => { const v = rowValue(r, s) / s.frames; sum += v * s.frames; fr += s.frames; peak = Math.max(peak, v); return v; });
+    g.fillStyle = '#20252e'; g.fillRect(lw, y + SRH - 2, sw, 1);
+    g.fillStyle = r.type === 'fn' ? '#5aa9ff' : own ? '#5aa9ff' : '#8f9bb0';
+    vs.forEach((v, k) => {
+      if (!v) return; const h = Math.max(2, Math.round((SRH - 3) * v / peak));
+      g.fillRect(lw + (ASAMPLES - S.act.length + k) * cw, y + SRH - 1 - h, Math.max(1, cw - 0.4), h);
+    });
+    const avg = fr ? sum / fr : 0;
+    if (avg) { g.fillStyle = '#8a93a2'; const s = avg >= 1000 ? (avg / 1000).toFixed(1) + 'k' : avg >= 10 ? avg.toFixed(0) : avg.toFixed(1); g.fillText(s, lw - 40, y + SRH / 2); }
+  }
+  if (!rows.length) { g.fillStyle = '#8a93a2'; g.fillText(S.classes ? 'nothing matches' + ($('#sysactive').checked ? ' (untick "running" to see every class)' : '') : 'loading classes…', 10, 12); }
+  else if (!S.trace) { g.fillStyle = '#e8a33d'; g.fillText('the trace is off: turn it on in the header to see activity', lw, Hh - 8); }
+  else if (Date.now() - S.lastAct > 3000) { g.fillStyle = '#e8a33d'; g.fillText('no activity samples yet', lw, Hh - 8); }
+}
+$('#syswrap').addEventListener('scroll', () => drawSystems());
+function sysHit(e) {
+  const r = sysC.getBoundingClientRect(); const y = e.clientY - r.top, x = e.clientX - r.left;
+  const i = Math.floor((y + $('#syswrap').scrollTop) / SRH); const row = (S.sysRowsCache || [])[i];
+  const k = x > SLW() ? Math.floor((x - SLW()) / ((sysC.width - SLW() - 4) / ASAMPLES)) - (ASAMPLES - S.act.length) : null;
+  return {row, s: k !== null && k >= 0 ? S.act[k] : null};
+}
+sysC.addEventListener('click', e => {
+  const {row} = sysHit(e); if (!row) return;
+  const key = row.type === 'cls' ? row.n.key : row.key;
+  if (key && (row.type !== 'cls' || row.kids || true)) { if (S.open.has(key)) S.open.delete(key); else S.open.add(key); store.set('sysOpen', [...S.open].slice(-300)); }
+  if (row.type !== 'group') selectSys(row);
+  drawSystems();
+});
+sysC.addEventListener('mousemove', e => {
+  const {row, s} = sysHit(e); if (!row || row.type === 'group') { tip.style.display = 'none'; return; }
+  let t = row.type === 'fn' ? (row.f.sig || row.f.key) + (row.f.rom ? `\nROM ${row.f.rom.module} 0x${hex(row.f.rom.addr, 8)}` : '\nport code (no ROM address)')
+        : row.type === 'other' ? row.o.tree + (enTip(row.o.tree) ? '\n' + enTip(row.o.tree) : '')
+        : row.n.tree + (enTip(row.n.tree) ? '\n' + enTip(row.n.tree) : '');
+  if (s) t += `\ntick ${s.tick}: ${rowValue(row, s)} calls in ${s.frames} frames` + (row.type === 'cls' && !(row.open || !row.kids) ? ' (with subclasses)' : '');
+  showTip(e, t);
+});
+sysC.addEventListener('mouseleave', () => tip.style.display = 'none');
+function chainOf(n) { const out = []; const byKey = new Map(S.classes.nodes.map(x => [x.key, x])); let b = n.base && byKey.get(n.base); while (b) { out.push(b); b = b.base && byKey.get(b.base); } return out; }
+function selectSys(row) {
+  S.sysSel = row; if (row.type !== 'fn') tellUi({cls: row.type === 'cls' ? row.n.tree : row.o.tree, where: 'systems'}); const box = $('#sysinfo'); box.classList.remove('dim');
+  if (row.type === 'fn') { showFn(row.f, box); S.sysDirty = true; return; }
+  const tree = row.type === 'cls' ? row.n.tree : row.o.tree, n = clsInfo(tree);
+  const names = row.type === 'cls' ? row.n.names : [tree];
+  const inst = S.actors.filter(a => names.includes(a.cls));
+  const pp = playerPos(); if (pp) for (const a of inst) a.dist = Math.round(Math.hypot(a.x - pp[0], a.y - pp[1], a.z - pp[2]));
+  inst.sort((a, b) => (a.dist || 0) - (b.dist || 0));
+  const descend = row.type === 'cls' ? S.post.filter(x => { let c = x; const byKey = new Map(S.classes.nodes.map(y => [y.key, y])); while (c && c.base) { if (c.base === row.n.key) return true; c = byKey.get(c.base); } return false; }).length : 0;
+  box.innerHTML = `<div>${cnHtml(tree, 'own')} ${enName(tree) ? `<b>${esc(enName(tree))}</b>` : ''}</div>` +
+    (row.type === 'cls' ? `<div class="small">cartridge <b>${esc(row.n.rom)}</b> · tree <b>${esc(row.n.tree)}</b>${row.n.aliases.length ? ' (also ' + esc(row.n.aliases.join(', ')) + ')' : ''} · ${esc(row.n.module)} · RTTI ${esc(row.n.kind)}${row.n.vtable ? ' · vtable 0x' + hex(row.n.vtable, 8) : ''}</div>
+       <div class="small dim">${[row.n, ...chainOf(row.n)].map(x => cnHtml(x.tree)).join(' : ')}${descend ? ` · ${descend} classes derive from it` : ''}</div>` : '') +
+    (n && n.gloss ? `<div class="small">${esc(n.gloss)}</div>` : '') +
+    `<div class="small" style="margin-top:3px">${actPerFrame(s => names.reduce((v, t) => v + (s.cls.get(t) || 0), 0))} calls/frame from its own methods · ` +
+    (inst.length ? `${inst.length} live: ` + inst.slice(0, 8).map(a => `<button class="small sfocus" data-p="${a.ptr}" title="inspect this one (${a.dist ?? '?'} units from Mario)">#${a.aid} ${a.dist ?? ''}</button>`).join(' ') : '<span class="dim">no live instance in the actor list</span>') +
+    ` <button class="small sclass">all methods</button></div>`;
+  box.querySelectorAll('.sfocus').forEach(b => b.onclick = () => focusActor(+b.dataset.p));
+  box.querySelector('.sclass').onclick = () => showClassTab(tree);
+  S.sysDirty = true;
+}
+['#sysfilter', '#sysactive'].forEach(s => $(s).addEventListener('input', () => { $('#syswrap').scrollTop = 0; drawSystems(); }));
+$('#sysopen').onclick = () => { for (const n of S.classes ? S.classes.nodes : []) if (S.kids.has(n.key)) S.open.add(n.key); drawSystems(); };
+$('#sysclose').onclick = () => { S.open.clear(); store.set('sysOpen', []); drawSystems(); };
+
+// ------------------------------------------------------------------ assets
+let assetRows = [];
+$('#bassets').onclick = async () => {
+  assetRows = await api('/api/assets');
+  assetRows.sort((a, b) => a.path < b.path ? -1 : 1);
+  drawAssets();
+};
+$('#asfilter').addEventListener('input', () => drawAssets());
+function drawAssets() {
+  const q = $('#asfilter').value.toLowerCase();
+  const rows = q ? assetRows.filter(r => (r.path + ' ' + r.cls + ' ' + r.actorCls + ' ' + cn(r.cls) + ' ' + cn(r.actorCls) + ' ' + r.caller).toLowerCase().includes(q)) : assetRows;
+  $('#astab tbody').innerHTML = rows.map(r => `<tr data-f="${r.file}" data-k="${esc(r.kind)}" title="${esc('caller ' + r.caller + (r.callerRom ? ' (ROM 0x' + hex(r.callerRom.addr, 8) + ')' : '') + '\ngame file id 0x' + hex(r.file, 4) + ' (' + r.how + '), ' + r.size + ' bytes, first at tick ' + r.tick + ', loaded ' + r.count + 'x' + (r.actorCls && r.actorCls !== r.cls ? '\nactor running at the time: ' + r.actorCls + (r.cls ? ' (it spawned or set up ' + r.cls + ')' : '') : ''))}">
+    <td data-p="${esc(r.path)}">${esc(r.path.replace(/^data\//, ''))}</td><td>${r.cls || r.actorCls ? cnHtml(r.cls || r.actorCls, 'own') : ''}</td><td class="dim small">${esc(qn(r.caller))}${r.count > 1 ? ' ×' + r.count : ''}</td></tr>`).join('') ||
+    `<tr><td colspan=3 class="dim">${assetRows.length ? 'no match' : 'nothing loaded since the lab started; change level or area, then refresh'}</td></tr>`;
+}
+$('#astab tbody').addEventListener('click', async e => {
+  const tr = e.target.closest('tr'); if (!tr || !tr.dataset.f) return;
+  $('#texs').innerHTML = '<div class="note">decoding…</div>';
+  const t = await api('/api/textures?file=' + tr.dataset.f);
+  $('#texs').innerHTML = t.length ? `<div class="note small">${esc(tr.children[0].dataset.p)}: ${t.length} texture(s). Texture names are strings the ROM carries.</div>` + t.map(x => `<div class="tex">${x.png ? `<img src="data:image/png;base64,${x.png}" width="${x.width * 2}" height="${x.height * 2}">` : '<div class="dim">(no pixels)</div>'}<div>${esc(x.name)}</div><div class="dim small">${x.width}×${x.height} ${esc(x.format)}${x.palette ? ' · ' + esc(x.palette) : ''}</div></div>`).join('')
+    : '<div class="note">not a model file (or no textures)</div>';
+});
+
+// ------------------------------------------------------------------ names
+function fillProposal(subject, rom, current, evidence) {
+  tab('names'); const f = $('#pform');
+  f.subject.value = subject; f.rom.value = rom; f.current.value = current; f.evidence.value = evidence; f.proposed.focus();
+}
+$('#pform').addEventListener('submit', async e => {
+  e.preventDefault(); const f = e.target;
+  const rec = {subject: f.subject.value, rom: f.rom.value, current: f.current.value, proposed: f.proposed.value, evidence: f.evidence.value,
+               level: $('#level').textContent, cls: S.focus ? S.focus.cls : null};
+  if (!rec.proposed) { f.proposed.focus(); return; }
+  await api('/api/propose', rec); f.proposed.value = ''; loadNotes();
+});
+async function loadNotes() {
+  const n = await api('/api/notes'); $('#ndir').textContent = `saved to ${n.dir} (outside the repo) · ${n.proposals.length} proposals · ${n.verify.length} queued for ROM verify`;
+  drawResults(n.results || [], n.verify);
+  $('#ptab tbody').innerHTML = n.proposals.slice().reverse().map(p => `<tr title="${esc(p.time + ' · ' + p.evidence_source + (p.rom ? '\nROM ' + p.rom : ''))}"><td>${esc(p.subject)}</td><td class="own">${esc(p.proposed)}</td><td class="dim small">${esc((p.evidence || '').slice(0, 80))}</td></tr>`).join('');
+}
+// The latest melonDS verdict per class, written by verify.py. "ran, never on
+// a <class>" and "not seen" are where the port and the cartridge disagree.
+function drawResults(results, queue) {
+  const last = {}; for (const r of results) last[r.cls] = r;
+  const waiting = [...new Set(queue.map(q => q.cls))].filter(c => !last[c] || last[c].queued < queue.filter(q => q.cls === c).pop().time);
+  const verdictClass = v => v.startsWith('confirmed') ? 'own' : v.startsWith('inconclusive') ? 'dim' : 'bad';
+  $('#vres').innerHTML = Object.values(last).reverse().map(r => {
+    const ok = r.functions.filter(f => f.verdict.startsWith('confirmed')).length;
+    const odd = r.functions.filter(f => !f.verdict.startsWith('confirmed'));
+    return `<div style="margin:4px 0"><b>${cnHtml(r.cls)}</b> <span class="own">${ok}</span> of ${r.functions.length} confirmed
+      <span class="dim">· ${esc(r.time)} · ${r.frames} frames of ${esc((r.state || '').split(/[\\/]/).pop())}${r.player_moved_next_to ? ' · player next to one' : ''}</span>
+      ${odd.length ? '<table>' + odd.map(f => `<tr><td class="${verdictClass(f.verdict)}">${esc(f.verdict)}</td><td>${esc(f.key)}</td><td class="dim">ROM ${hex(f.rom.addr, 8)} · cartridge ${f.rom_count} · port ${f.port_calls}</td></tr>`).join('') + '</table>' : ''}</div>`;
+  }).join('') + (waiting.length ? `<div class="dim">queued, not run yet: ${esc(waiting.join(', '))}. Run <code>python port/mods_api/naming_lab/verify.py run --state &lt;savestate&gt;</code></div>` : '')
+    || '<div class="dim">nothing verified yet</div>';
+}
+$('#bverify').onclick = async () => {
+  if (!S.focus) return; const {seen} = tlRows();
+  const fns = [...seen].map(([id, n]) => ({key: S.fns[id].key, calls: n, frames: countFramesWith(id), rom: S.fns[id].rom})).filter(f => f.rom);
+  const a = S.actors.find(x => x.ptr === S.focus.ptr) || {};
+  await api('/api/verify', {cls: S.focus.cls, chain: S.layout ? S.layout.chain : [S.focus.cls], actorID: a.aid, level: $('#level').textContent, area: a.area, pos: [a.x, a.y, a.z], functions: fns});
+  $('#fninfo').textContent = `queued ${S.focus.cls}: ${fns.length} functions with ROM addresses, for the melonDS recorder`; loadNotes();
+};
+
+// ------------------------------------------------------------------ source
+async function openSource(rom) {
+  const s = await api('/api/source?rom=' + encodeURIComponent(rom));
+  if (s.error) { tip.style.display = 'none'; alertBox(s.error); return; }
+  $('#srcname').textContent = `${s.path}:${s.line}`;
+  $('#srcpre').innerHTML = s.text.split('\n').map((l, i) => `<div class="${i + 1 === s.line ? 'hl' : ''}"><span class="ln">${i + 1}</span>${esc(l)}</div>`).join('');
+  $('#src').style.display = 'flex';
+  const el = $('#srcpre').children[Math.max(0, s.line - 4)]; if (el) el.scrollIntoView();
+}
+function alertBox(t) { const b = $('#p-sys').classList.contains('on') ? $('#sysinfo') : $('#fninfo'); b.insertAdjacentHTML('beforeend', `<div class="bad">${esc(t)}</div>`); }
+$('#srcclose').onclick = () => $('#src').style.display = 'none';
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#src').style.display = 'none'; });
+
+// ------------------------------------------------------------------ layout & controls
+$('#bpause').onclick = () => cmd(S.paused ? 'resume' : 'pause').then(() => cmd('status', 'status'));
+$('#bstep').onclick = () => cmd('step 1');
+$('#bstep10').onclick = () => cmd('step 10');
+$('#btrace').onclick = () => cmd('trace ' + (S.trace ? 0 : 1), 'status');
+function tab(p) { document.querySelectorAll('#righttabs button').forEach(b => b.classList.toggle('on', b.dataset.p === p)); document.querySelectorAll('#p-hot,#p-assets,#p-names,#p-methods').forEach(x => x.classList.toggle('on', x.id === 'p-' + p)); if (p === 'methods') drawMethods(); if (p === 'hot') S.hotDirty = true; }
+$('#righttabs').addEventListener('click', e => { if (e.target.dataset.p) tab(e.target.dataset.p); });
+function midTab(p) { document.querySelectorAll('#midtabs button').forEach(b => b.classList.toggle('on', b.dataset.p === p)); $('#p-insp').classList.toggle('on', p === 'insp'); $('#p-sys').classList.toggle('on', p === 'sys'); store.set('mid', p); S.sysDirty = S.tlDirty = true; }
+$('#midtabs').addEventListener('click', e => { if (e.target.dataset.p) midTab(e.target.dataset.p); });
+// draggable column widths, remembered
+for (const gut of document.querySelectorAll('.gut')) {
+  const v = gut.dataset.v, sign = +gut.dataset.s, w = store.get(v, null);
+  if (w) document.documentElement.style.setProperty(v, w + 'px');
+  gut.addEventListener('mousedown', e => {
+    e.preventDefault(); gut.classList.add('drag');
+    const x0 = e.clientX, w0 = parseInt(getComputedStyle(document.documentElement).getPropertyValue(v));
+    const mv = ev => { const w = Math.max(200, Math.min(innerWidth * 0.5, w0 + sign * (ev.clientX - x0))); document.documentElement.style.setProperty(v, w + 'px'); store.set(v, w); S.tlDirty = S.sysDirty = true; };
+    const up = () => { gut.classList.remove('drag'); removeEventListener('mousemove', mv); removeEventListener('mouseup', up); };
+    addEventListener('mousemove', mv); addEventListener('mouseup', up);
+  });
+}
+addEventListener('resize', () => S.tlDirty = S.sysDirty = true);
+
+// redraw at most ~15 times a second, whatever the event rate
+let lastHot = 0;
+setInterval(() => {
+  if (S.tlDirty && $('#p-insp').classList.contains('on')) { S.tlDirty = false; drawTimeline(); }
+  if (S.fieldsDirty && !S.editing && $('#p-insp').classList.contains('on')) { S.fieldsDirty = false; drawFields(); }
+  if (S.sysDirty && $('#p-sys').classList.contains('on')) { S.sysDirty = false; drawSystems(); }
+  if (S.hotDirty && $('#p-hot').classList.contains('on') && Date.now() - lastHot > 500) { S.hotDirty = false; lastHot = Date.now(); drawHot(); }
+}, 66);
+// whole-game call counts every HOT_EVERY frames ("all": every callee, not only
+// the hottest), re-armed whenever the samples stop (a restarted game forgets it)
+const armHot = () => cmd(`hot ${HOT_EVERY} all`).catch(() => {});
+setInterval(() => { if (S.trace && Date.now() - S.lastAct > 3000) armHot(); }, 3000);
+if (!TOKEN) document.body.insertAdjacentHTML('afterbegin', '<div style="background:#600;padding:6px">No access token: open the URL lab_server.py printed (it ends in #token=…).</div>');
+midTab(store.get('mid', 'insp'));
+connect(); loadNotes().catch(() => {}); loadClasses().catch(e => $('#syscount').textContent = String(e));
+setTimeout(armHot, 500);
+</script>
+</body>
+</html>

@@ -18264,6 +18264,23 @@ if(MSVC)
     target_link_options(walk_window PRIVATE /BASE:0x10000000)
 endif()
 
+# THE TRACING BUILD'S PLUGIN LOADER, for the naming lab (mods_api/naming_lab).
+# hal/lab_plugins.cpp loads code mods from mods/<id>/ beside the exe through
+# plugin API v1 (mods_api/sm64ds_mod.h, the custom line's API) and hangs them on
+# hal/mod_hooks.h's frame and level seams; mk_symtab writes the name -> address
+# table its symbol() reads. Tracing builds only: the shipped build has no
+# loader, so no plugin can reach a player's game through it.
+if(PORT_FN_TRACE)
+    target_sources(walk_window PRIVATE hal/lab_plugins.cpp)
+    add_custom_command(TARGET walk_window POST_BUILD
+        COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tools/mk_symtab.py"
+                "$<TARGET_FILE_DIR:walk_window>/walk_window.map"
+                "$<TARGET_FILE_DIR:walk_window>/walk_window.symtab"
+                "$<TARGET_FILE:walk_window>"
+        VERBATIM
+        COMMENT "mk_symtab: walk_window.symtab for the plugin API")
+endif()
+
 # The save state captures the whole .dsstate section (hal/dsstate_seg.h). Fail
 # the build if a hosted DS global landed OUTSIDE it: that symbol would not roll
 # back on a restore, which is exactly the class of bug that shipped in 0.2.0
