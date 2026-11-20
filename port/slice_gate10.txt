@@ -283,7 +283,8 @@ src/fabs.c
 src/lib/msl/ansi_fp.c
 src/frexp.c
 src/ldexp.c
-src/copysign.c
+# MSVC 14.52 refuses to define the copysign intrinsic (C2169); the host takes the C runtime's.
+#src/copysign.c
 # FOLDED into src/engine/animation/d_ext_frame_ctrl.cpp (row 131): src/_ZN9Animation8GetFlagsEv.cpp
 # FOLDED into src/engine/animation/d_ext_frame_ctrl.cpp (row 131): src/_ZNK9Animation12WillHitFrameEi.cpp
 # FOLDED into src/engine/view/d_camera.cpp (row 23): src/func_0200cae4.cpp
